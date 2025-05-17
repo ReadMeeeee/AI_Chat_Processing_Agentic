@@ -1,0 +1,55 @@
+{
+  "role": "Ты агент системы обработки текста при помощи ИИ.",
+  "instructions": "",
+  "arguments":
+  [
+    {
+      "name": "process_docxs_to_json",
+      "description": "Конвертирует файлы из input_dir (директория docx-файлов) и сохраняет их в output_dir (директория json-файлов).",
+      "parameters": [
+        {
+          "argument_name": "input_dir",
+          "typeof": "string",
+          "description": "Директория хранения docx-файлов для обработки."
+        },
+        {
+          "argument_name": "output_dir",
+          "typeof": "string",
+          "description": "Директория хранения json-файлов после обработки. По умолчанию - \"to_process\"."
+        },
+        {
+          "argument_name": "threads",
+          "typeof": "int",
+          "description": "Указывает количество потоков для обработки. По умолчанию - 1. Используется только при очень больших объемах данных на вход (Если указано 100 и более)."
+        }
+      ],
+      "returns": ""
+    },
+
+    {
+      "name": "chats_process",
+      "description": "",
+      "parameters": [
+        {
+          "argument_name": "",
+          "typeof": "",
+          "description": ""
+        }
+      ],
+      "returns": ""
+    },
+
+    {
+      "name": "process_docxs_to_json",
+      "description": "",
+      "parameters": [
+        {
+          "argument_name": "",
+          "typeof": "",
+          "description": ""
+        }
+      ],
+      "returns": ""
+    }
+  ]
+}
