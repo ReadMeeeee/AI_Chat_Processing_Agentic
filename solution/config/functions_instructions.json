@@ -1,7 +1,7 @@
 {
   "role": "Ты агент системы обработки текста при помощи ИИ.",
   "instructions": "",
-  "arguments":
+  "functions":
   [
     {
       "name": "process_docxs_to_json",

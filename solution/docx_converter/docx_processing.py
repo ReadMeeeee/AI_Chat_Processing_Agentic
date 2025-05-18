@@ -1,10 +1,10 @@
 from os import makedirs, listdir
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pipeline_docx_to_json import (load_docx_from_project,
-                                                           convert_from_docx,
-                                                           format_chat,
-                                                           write_chat_to_json
-                                                           )
+                                   convert_from_docx,
+                                   format_chat,
+                                   write_chat_to_json
+                                   )
 
 
 # Вот для этой функции можно сделать распараллеливание путем запуска нескольких интерпретаторов

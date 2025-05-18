@@ -2,15 +2,18 @@ from pydantic import BaseModel
 
 
 class InstructionSolution(BaseModel):
+    field_name: str
     instruction: str
     example: str = ""
     response_format: str = ""
 
 
     def unit_it(self) -> str:
-        s = (f"{self.instruction}\n"
+        s = (
+             f"{self.instruction}\n"
              f"Пример для выполнения задачи:\n{self.example}\n"
-             f"Формат вывода для поля:\n{self.response_format}\n")
+             f"Формат вывода:\n{self.response_format}\n"
+        )
 
         return s
 
@@ -18,17 +21,23 @@ class InstructionSolution(BaseModel):
 class InstructionBlockSolution(BaseModel):
     role: str
     introduction: str
-    instructions: list[InstructionSolution]
-    context: str | None
-    format: str | None
+    instructions: dict[str, InstructionSolution] | None = None
+    context: str | list[str] | None = None
+    output_format: InstructionSolution | None = None
 
 
     def unit_it(self) -> tuple[str, str]:
-        instructions = self.introduction + "\n" + "\n".join(instruction.unit_it() for instruction in self.instructions)
-        s = (f"Инструкция для задачи:{instructions}\n"
-             f"Контекст для задачи:\n{self.context or 'данные не найдены'}\n"
-             f"Формат вывода:\n{self.format or 'данные не найдены'}\n")
+        instructions = self.introduction + "\n" + "\n".join(
+            instruction.unit_it() for instruction in self.instructions.values()
+        ) if self.instructions else ""
 
+        context = "\n".join(self.context) if isinstance(self.context, list) else (self.context or "данные не найдены")
+
+        s = (
+            f"Инструкция для задачи:\n{instructions}\n"
+            f"Контекст для задачи:\n{context or 'данные не найдены'}\n"
+            f"Формат вывода:\n{self.output_format.unit_it() if self.output_format else 'данные не найдены'}\n"
+        )
         return self.role, s
 
 
@@ -39,9 +48,11 @@ class ParameterInfo(BaseModel):
 
 
     def unit_it(self) -> str:
-        s = (f"Аргумент функции: {self.argument_name}\n"
-             f"Тип аргумента:\n{self.typeof}\n"
-             f"Описание аргумента:\n{self.description}\n")
+        s = (
+            f"  Аргумент функции: {self.argument_name}\n"
+            f"  Тип аргумента: {self.typeof}\n"
+            f"  Описание аргумента: {self.description}\n"
+        )
 
         return s
 
@@ -56,17 +67,17 @@ class FunctionData(BaseModel):
     def unit_it(self) -> str:
         params = "\n".join(param.unit_it() for param in self.parameters)
         s = (
-            f"Название функции: {self.name}\n"
-            f"Описание функции: {self.description}\n"
-            f"Параметры функции:\n{params}"
+            f" Название функции: {self.name}\n"
+            f" Описание функции: {self.description}\n"
+            f" Параметры функции:\n{params}"
         )
         if self.returns:
-            s += f"\nФункция возвращает: {self.returns}"
+            s += f"\n Функция возвращает: {self.returns}"
 
         return s
 
 
-class InstructionOfFunctions(BaseModel):
+class InstructionBlockFunctions(BaseModel):
     role: str
     instructions: str
     functions: list[FunctionData]

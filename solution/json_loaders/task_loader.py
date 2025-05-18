@@ -1,25 +1,31 @@
-def load_task():
-    pass
+from json import load
+from utils import is_file_is_correct
 
 
-def upload_solution(solutions_folder: str, sol: ProblemWithSolution) -> None:
-    """
-    Функция создает по пути json_solution_path json-файл с решениями
+def load_task(path_to_task: str) -> tuple[str, str]:
+    is_file_is_correct(path_to_task, '.json')
+    with open(path_to_task, 'r', encoding="utf-8") as f:
+        data = load(f)
 
-    :param solutions_folder: путь для сохранения решений в формате .json
-    :param sol: решение типа ProblemWithSolution
-    """
-    filename = sol.name.join(".json")
-    full_path = path.join(solutions_folder, filename)
-    is_file_is_correct(full_path, ".json", is_file = False)
+    company = data['company']
+    chat = data['chat']
+
+    return company, chat
 
 
-    str_to_write = {
-        "company": sol.name,
-        "description": sol.description,
-        "keywords": sol.keywords,
-        "solution": sol.solution
-    }
+'''
+def main():
+    from solution.config import path_to_process
+    from os import listdir
 
-    with open(full_path, "w", encoding="utf-8") as f:
-        dump(str_to_write, f, ensure_ascii=False, indent=4)
+
+    files = listdir(path_to_process)
+    print(path_to_process, '\n\n', files)
+
+    company, chat = load_task(path_to_process + '\\' + files[0])
+    print(company, '\n\n', chat)
+
+
+if __name__ == '__main__':
+    main()
+'''
