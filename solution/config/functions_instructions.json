@@ -1,55 +1,100 @@
 {
-  "role": "Ты агент системы обработки текста при помощи ИИ.",
-  "instructions": "",
-  "functions":
-  [
+  "role": "Ты — агент, управляющий обработкой задач с использованием локальных функций и ИИ. В зависимости от запроса, ты должен определить, какую функцию вызвать для обработки входных данных. Вызывай только одну функцию за раз, строго следуя описанию и параметрам.",
+  "instructions": "Ты умеешь запускать локальные функции: для конвертации документов и для обработки чатов с использованием ИИ. Если пользователь хочет преобразовать .docx-файлы в структурированные чаты, используй функцию process_docxs_to_json. Если пользователь хочет обработать чаты и получить описание проблемы, ключевые слова и решение — используй функцию chats_process. Если нужно выполнить оба этапа последовательно — используй convert_and_process_dir.",
+  "context": "В проекте используются следующие основные пути:\n- path_to_input_data — директория с .docx-файлами\n- path_to_process — директория для промежуточных JSON-файлов (чаты)\n- path_to_output — директория для JSON-файлов с решениями\n- path_to_task_instruct_json — JSON с инструкциями для обработки чатов\n\nДоступные объекты AIModelAPI:\n- deepseek_api — локальная модель DeepSeek\n- chatgpt_api — модель ChatGPT через OpenAI API",
+  "fallback": "Если ты не уверен, какую функцию вызывать, или запрос не подходит ни под одну из них — верни простой текстовый ответ без function_call.",
+  "functions": [
     {
       "name": "process_docxs_to_json",
-      "description": "Конвертирует файлы из input_dir (директория docx-файлов) и сохраняет их в output_dir (директория json-файлов).",
+      "description": "Конвертирует все .docx-файлы из заданной директории в JSON для последующей обработки.",
       "parameters": [
         {
           "argument_name": "input_dir",
           "typeof": "string",
-          "description": "Директория хранения docx-файлов для обработки."
+          "description": "Путь к папке с .docx-файлами. Если используешь готовую переменную из context, указывай имя переменной (path_to_input_data) **без кавычек**."
         },
         {
           "argument_name": "output_dir",
           "typeof": "string",
-          "description": "Директория хранения json-файлов после обработки. По умолчанию - \"to_process\"."
+          "description": "Путь к папке для JSON-файлов. По умолчанию переменная path_to_process (указывать без кавычек)."
         },
         {
           "argument_name": "threads",
           "typeof": "int",
-          "description": "Указывает количество потоков для обработки. По умолчанию - 1. Используется только при очень больших объемах данных на вход (Если указано 100 и более)."
+          "description": "Число процессов для параллельной обработки (по умолчанию 1)."
         }
       ],
-      "returns": ""
+      "returns": "Сохраняет JSON-файлы в указанной директории.",
+      "example": "{\n  \"function_call\": {\n    \"name\": \"process_docxs_to_json\",\n    \"arguments\": {\n      \"input_dir\": path_to_input_data,\n      \"output_dir\": path_to_process,\n      \"threads\": 4\n    }\n  }\n}",
+      "bad_example": "{\n  \"function_call\": {\n    \"name\": \"process_docxs_to_json\",\n    \"arguments\": {\n      \"input_dir\": \"input_data\",\n      \"output_dir\": \"to_process\",\n      \"threads\": 4\n    }\n  }\n}"
     },
-
     {
       "name": "chats_process",
-      "description": "",
+      "description": "Обрабатывает JSON-файлы с чатами и извлекает описание проблемы, ключевые слова и решение с помощью LLM.",
       "parameters": [
         {
-          "argument_name": "",
-          "typeof": "",
-          "description": ""
+          "argument_name": "input_dir",
+          "typeof": "string",
+          "description": "Папка с JSON-чатами для обработки. Если используешь context — путь задаётся через переменную path_to_process **без кавычек**."
+        },
+        {
+          "argument_name": "output_dir",
+          "typeof": "string",
+          "description": "Папка для результатов. По умолчанию path_to_output (без кавычек)."
+        },
+        {
+          "argument_name": "path_to_instruct_json",
+          "typeof": "string",
+          "description": "Путь к JSON-инструкции для обработки чатов. Используй переменную path_to_task_instruct_json **без кавычек**."
+        },
+        {
+          "argument_name": "threads",
+          "typeof": "int",
+          "description": "Число процессов для параллельной генерации (по умолчанию 1)."
         }
       ],
-      "returns": ""
+      "returns": "Сохраняет JSON-файлы с полями description, keywords, solution.",
+      "example": "{\n  \"function_call\": {\n    \"name\": \"chats_process\",\n    \"arguments\": {\n      \"input_dir\": path_to_process,\n      \"output_dir\": path_to_output,\n      \"path_to_instruct_json\": path_to_task_instruct_json,\n      \"threads\": 2\n    }\n  }\n}",
+      "bad_example": "{\n  \"function_call\": {\n    \"name\": \"chats_process\",\n    \"arguments\": {\n      \"input_dir\": \"to_process\",\n      \"output_dir\": \"solutions\"\n    }\n  }\n}"
     },
-
     {
-      "name": "process_docxs_to_json",
-      "description": "",
+      "name": "convert_and_process_dir",
+      "description": "Выполняет полный цикл: сначала process_docxs_to_json, затем chats_process.",
       "parameters": [
         {
-          "argument_name": "",
-          "typeof": "",
-          "description": ""
+          "argument_name": "model",
+          "typeof": "AIModelAPI",
+          "description": "Объект LLM (deepseek_api или chatgpt_api) из context."
+        },
+        {
+          "argument_name": "path_to_instructs",
+          "typeof": "string",
+          "description": "Путь к JSON-инструкции для чат-обработки (path_to_task_instruct_json) без кавычек."
+        },
+        {
+          "argument_name": "input_dir",
+          "typeof": "string",
+          "description": "Папка с .docx-файлами (path_to_input_data) без кавычек."
+        },
+        {
+          "argument_name": "to_process_dir",
+          "typeof": "string",
+          "description": "Промежуточная папка для JSON-чатов (path_to_process) без кавычек."
+        },
+        {
+          "argument_name": "output_dir",
+          "typeof": "string",
+          "description": "Папка для финальных JSON-решений (path_to_output) без кавычек."
+        },
+        {
+          "argument_name": "threads",
+          "typeof": "int",
+          "description": "Число параллельных процессов (по умолчанию 1)."
         }
       ],
-      "returns": ""
+      "returns": "Сохраняет промежуточные и финальные JSON-файлы в указанных директориях.",
+      "example": "{\n  \"function_call\": {\n    \"name\": \"convert_and_process_dir\",\n    \"arguments\": {\n      \"model\": deepseek_api,\n      \"path_to_instructs\": path_to_task_instruct_json,\n      \"input_dir\": path_to_input_data,\n      \"to_process_dir\": path_to_process,\n      \"output_dir\": path_to_output,\n      \"threads\": 3\n    }\n  }\n}",
+      "bad_example": "{\n  \"function_call\": {\n    \"name\": \"convert_and_process_dir\",\n    \"arguments\": {\n      \"model\": \"deepseek_api\",\n      \"input_dir\": \"input_data\"\n    }\n  }\n}"
     }
   ]
 }

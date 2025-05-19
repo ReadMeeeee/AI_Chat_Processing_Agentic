@@ -1,6 +1,6 @@
 from json import load
-from models import InstructionBlockSolution, InstructionBlockFunctions
-from utils import is_file_is_correct, is_subset_of
+from .models import InstructionBlockSolution, InstructionBlockFunctions
+from .my_utils import is_file_is_correct
 
 
 def load_task(path_to_task: str) -> tuple[str, str]:

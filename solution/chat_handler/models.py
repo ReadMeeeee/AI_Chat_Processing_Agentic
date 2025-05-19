@@ -5,9 +5,7 @@ from openai.types.chat import (
     ChatCompletionSystemMessageParam,
     ChatCompletionMessageParam,
 )
-from solution.json_loaders import (load_instruction_solution, load_instruction_function_calling,
-                                   InstructionBlockSolution, InstructionBlockFunctions,
-                                   load_task,)
+from solution.json_loaders import InstructionBlockSolution, InstructionBlockFunctions
 
 
 class LLMRequest(BaseModel):
@@ -17,12 +15,12 @@ class LLMRequest(BaseModel):
 
     def to_prompt(self) -> list[ChatCompletionMessageParam]:
         data = self.instructions
-        content = data.unit_it()
-        content[1] += self.task
+        pre_prompt = data.unit_it()
+        content = pre_prompt.instructions + self.task
 
         prompt: list[ChatCompletionMessageParam] = [
-            ChatCompletionSystemMessageParam(role="system", content=content[0]),
-            ChatCompletionUserMessageParam(role="user", content=content[1])
+            ChatCompletionSystemMessageParam(role="system", content=pre_prompt.role),
+            ChatCompletionUserMessageParam(role="user", content=content)
         ]
 
         return prompt
@@ -58,6 +56,7 @@ class AIModelAPI:
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=prompt,
-            temperature=temperature
+            temperature=temperature,
+            stream=False
         )
         return response.choices[0].message.content

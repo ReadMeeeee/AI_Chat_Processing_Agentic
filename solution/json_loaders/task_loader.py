@@ -1,5 +1,5 @@
 from json import load
-from utils import is_file_is_correct
+from .my_utils import is_file_is_correct
 
 
 def load_task(path_to_task: str) -> tuple[str, str]:

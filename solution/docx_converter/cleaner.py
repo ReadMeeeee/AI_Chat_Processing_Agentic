@@ -1,4 +1,4 @@
-from re import sub
+from re import sub, IGNORECASE
 
 
 REMOVE_CHARS = {
@@ -32,3 +32,7 @@ def clear_text(
         text = text.lower()
 
     return text.strip()
+
+
+def strip_json_markdown(text: str) -> str:
+    return sub(r"^```json\s*|\s*```$", "", text.strip(), flags=IGNORECASE)

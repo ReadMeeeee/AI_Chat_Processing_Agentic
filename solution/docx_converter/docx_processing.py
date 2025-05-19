@@ -1,14 +1,17 @@
-from os import makedirs, listdir
+from os import makedirs, listdir, path
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from pipeline_docx_to_json import (load_docx_from_project,
+
+from .pipeline_docx_to_json import (load_docx_from_project,
                                    convert_from_docx,
                                    format_chat,
                                    write_chat_to_json
                                    )
 
+from solution.config import path_to_process
+
 
 # Вот для этой функции можно сделать распараллеливание путем запуска нескольких интерпретаторов
-def process_docx_to_json(file_path: str, output_dir: str = "to_process") -> None:
+def process_docx_to_json(file_path: str, output_dir: str = path_to_process) -> None:
     """
     Обрабатывает docx-файл в json-файл в каталоге output_dir.
     Использует цепочку: load - convert - format - write.
@@ -29,7 +32,7 @@ def process_docx_to_json(file_path: str, output_dir: str = "to_process") -> None
         print(f"Ошибка при обработке файла {file_path}: {e}\n{100 * '-'}")
 
 
-def process_docxs_to_json(input_dir: str, output_dir: str = "to_process", threads: int = 1) -> None:
+def process_docxs_to_json(input_dir: str, output_dir: str = path_to_process, threads: int = 1) -> None:
     """
     Обрабатывает в директории docx-файлы в json-файлы в каталог output_dir.
     Использует цепочку: load - convert - format - write.
@@ -43,12 +46,11 @@ def process_docxs_to_json(input_dir: str, output_dir: str = "to_process", thread
 
     if threads <= 1:
         for filename in files:
-            process_docx_to_json(f"{input_dir}\\{filename}", output_dir=output_dir)
+            process_docx_to_json(path.join(input_dir, filename), output_dir=output_dir)
         return
 
-    with ProcessPoolExecutor(max_workers=threads) as executor:                                # Использование файла по циклу файла из файлов
-        futures = {executor.submit(process_docx_to_json, f"{input_dir}\\{filename}", output_dir): filename for filename in files}
-                # Для каждой задачи 'process_docx' есть свой файл 'filename'
+    with ProcessPoolExecutor(max_workers=threads) as executor:
+        futures = {executor.submit(process_docx_to_json, path.join(input_dir, filename), output_dir): filename for filename in files}
         for future in as_completed(futures):
         # Для каждого ожидаемого объекта - подождать объект и попробовать извлечь результат
             file = futures[future]

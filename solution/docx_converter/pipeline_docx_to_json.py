@@ -3,7 +3,7 @@ from json import dump
 from docx import Document
 
 from solution.docx_converter.models import Message, Chat, CompanyChat
-from cleaner import clear_text, REMOVE_CHARS
+from .cleaner import clear_text, REMOVE_CHARS
 
 
 # Сперва необходимо загрузить .docx файл в переменную объекта .docx

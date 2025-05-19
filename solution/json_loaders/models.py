@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 
 
+class PrePrompt(BaseModel):
+    role: str
+    instructions: str
+
+
 class InstructionSolution(BaseModel):
     field_name: str
     instruction: str
@@ -26,7 +31,7 @@ class InstructionBlockSolution(BaseModel):
     output_format: InstructionSolution | None = None
 
 
-    def unit_it(self) -> tuple[str, str]:
+    def unit_it(self) -> PrePrompt:
         instructions = self.introduction + "\n" + "\n".join(
             instruction.unit_it() for instruction in self.instructions.values()
         ) if self.instructions else ""
@@ -38,7 +43,9 @@ class InstructionBlockSolution(BaseModel):
             f"Контекст для задачи:\n{context or 'данные не найдены'}\n"
             f"Формат вывода:\n{self.output_format.unit_it() if self.output_format else 'данные не найдены'}\n"
         )
-        return self.role, s
+
+        pre_prompt = PrePrompt(role=self.role, instructions=s)
+        return pre_prompt
 
 
 class ParameterInfo(BaseModel):
@@ -62,6 +69,8 @@ class FunctionData(BaseModel):
     description: str
     parameters: list[ParameterInfo]
     returns: str | None = None
+    example: str = ""
+    bad_example: str = ""
 
 
     def unit_it(self) -> str:
@@ -72,22 +81,30 @@ class FunctionData(BaseModel):
             f" Параметры функции:\n{params}"
         )
         if self.returns:
-            s += f"\n Функция возвращает: {self.returns}"
-
+            s += f"\n Функция возвращает: {self.returns}\n"
+        s += (
+             f" Пример вызова функции: {self.example}\n"
+             f" Пример некорректного вызова: {self.bad_example}\n"
+        )
         return s
 
 
 class InstructionBlockFunctions(BaseModel):
     role: str
     instructions: str
+    context: str = ""
+    fallback: str = ""
     functions: list[FunctionData]
 
 
-    def unit_it(self) -> tuple[str, str]:
+    def unit_it(self) -> PrePrompt:
         functions = "\n".join(func.unit_it() for func in self.functions)
         s = (
             f"Инструкции для 'function calling':\n{self.instructions}\n"
+            f"Контекст для задачи: {self.context or "Данные не найдены"}\n"
             f"Описание функций:\n{functions}\n"
+            f"Если сомневаешься в выборе функции: {self.fallback or "Данные не найдены"}"
         )
 
-        return self.role, s
+        pre_prompt = PrePrompt(role=self.role, instructions=s)
+        return pre_prompt

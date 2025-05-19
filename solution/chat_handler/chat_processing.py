@@ -2,15 +2,15 @@ from os import path, makedirs, listdir
 from json import loads, JSONDecodeError, dump
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from models import AIModelAPI, LLMRequest, ProblemWithSolution
+from solution.chat_handler.models import AIModelAPI, LLMRequest, ProblemWithSolution
 from solution.json_loaders import load_task, load_instruction_solution
 
 
 def chat_process(
         model: AIModelAPI,
-        path_to_instruct_json: str,
         path_to_task: str,
-        output_dir: str = "solutions"
+        path_to_instruct_json: str,
+        output_dir: str
 ) -> None:
 
     company_name, chat_text = load_task(path_to_task)
@@ -45,8 +45,8 @@ def chat_process(
 def chats_process(
         model: AIModelAPI,
         path_to_instruct_json: str,
-        input_dir: str = "to_process",
-        output_dir: str = "solutions",
+        input_dir: str,
+        output_dir: str,
         threads: int = 1
 ) -> None:
     files = listdir(input_dir)
@@ -56,13 +56,13 @@ def chats_process(
             chat_process(
                 model=model,
                 path_to_instruct_json=path_to_instruct_json,
-                path_to_task=f"{input_dir}\\{filename}",
+                path_to_task=path.join(input_dir, filename),
                 output_dir=output_dir
             )
         return
 
     with ProcessPoolExecutor(max_workers=threads) as executor:
-        futures = {executor.submit(chat_process, model=model, path_to_task=f"{input_dir}\\{filename}",
+        futures = {executor.submit(chat_process, model=model, path_to_task=path.join(input_dir, filename),
                                    path_to_instruct_json=path_to_instruct_json,
                                    output_dir=output_dir): filename for filename in files}
 
