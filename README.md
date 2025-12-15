@@ -1,69 +1,108 @@
-# AI-агент по обработке документов и чатов
+# AI_Chat_Processing_Agentic
 
-Небольшой агент на Python, который:
+Agent-based AI pipeline для обработки документов и чатов.
+Проект объединяет конвертацию `.docx` в структурированные JSON-чаты и их последующую обработку через LLM
+с использованием **function calling** и строгой валидации данных (Pydantic).
 
-1. Конвертирует `.docx` файлы в JSON-чаты (`process_docxs_to_json`)
-2. Обрабатывает JSON-чаты через AI по API, извлекая описание проблемы, ключевые слова и пошаговое решение (`chats_process`)
-3. Запускает оба цикла через одну команду (`convert_and_process_dir`)
+Это логическое развитие предыдущих проектов (`Practice`, `UnifiedRequest`) и переход
+к **агентной архитектуре**.
 
 ---
 
-## Структура проекта
+## Идея проекта
 
+Проект реализует AI-агента, который способен:
+
+1. Конвертировать `.docx` файлы в JSON-чаты
+2. Обрабатывать эти чаты через LLM:
+   - извлекать описание проблемы
+   - ключевые слова
+   - пошаговое решение
+3. Управлять всем процессом **через один агентный цикл**
+   с использованием function calling
+
+Агент сам выбирает, **какое действие выполнить**, на основе описанных функций и инструкций.
+
+---
+
+## Основной сценарий (agent flow)
+
+1. Запуск `run.py`
+2. Агент:
+   - загружает инструкции и описание функций из JSON
+   - формирует prompt для LLM
+3. LLM возвращает:
+   - либо финальный JSON-ответ
+   - либо `function_call`
+4. Агент вызывает соответствующую локальную функцию:
+   - `process_docxs_to_json`
+   - `chats_process`
+   - `convert_and_process_dir`
+5. Результаты сохраняются в выходные директории
+
+---
+
+## Архитектура проекта
+
+### Точка входа
+- `run.py` - запуск агентного цикла
+
+### Основные модули
+
+#### `solution/config/`
+- `config.py` - пути, загрузка `.env`, инициализация AI API
+- `functions_instructions.json` - инструкции для function calling
+- `task_instructions.json` - инструкции для обработки чатов
+- `functions_instructions_old.json` - предыдущая версия инструкций
+
+#### `solution/docx_converter/`
+Пайплайн конвертации `.docx → JSON`:
+- `cleaner.py` - очистка текста
+- `pipeline_docx_to_json.py` - последовательность шагов
+- `docx_processing.py` - обработка файла или директории
+- `models.py` - Pydantic-модели
+
+#### `solution/chat_handler/`
+Обработка JSON-чатов через LLM:
+- `chat_processing.py` - обработка одного файла или директории
+- `models.py` - Pydantic-модели запросов и ответов
+
+#### `solution/json_loaders/`
+Загрузка и валидация инструкций:
+- `json_data_loader.py`
+- `task_loader.py`
+- `my_utils.py`
+- `models.py`
+
+#### `solution/convert_and_process/`
+- `convert_and_process_dir.py` - объединение конвертации `.docx` и AI-обработки
+
+---
+
+## Используемые подходы
+
+- Agent-based architecture
+- Function calling (LLM управляет вызовами функций)
+- Единая структура запросов
+- JSON-only ответы от LLM
+- Строгая валидация через **Pydantic v2**
+- Явное разделение ответственности между слоями
+
+---
+
+## Установка и запуск
+
+```bash
+pip install -r requirements.txt
+python run.py
 ```
-.
-├── README.md
-├── .env         # Ключи для ИИ по API
-├── run.py       # Точка входа
-├── solution/
-│   ├── config/
-│   │   ├── config.py                       # Пути к директориям, загрузка .env, инициализация AIModelAPI
-│   │   ├── functions_instructions.json     # Инструкции по обработке основного запроса (function_calling prompt)
-│   │   ├── functions_instructions_old.json # Старая (рабочая, недоработанная) версия functions_instructions.json
-│   │   ├── task_instructions.json          # Инструкция по обработке чата
-│   │   └── __init__.py
-│   ├── docx_converter/
-│   │   ├── pipeline_docx_to_json.py  # Функции для подготовки текста в порядке пайплайна
-│   │   ├── models.py                 # Модели (pydantic-классы) для подготовки текста
-│   │   ├── cleaner.py                # Функции очистки текста от мусора
-│   │   ├── docx_processing.py        # Объединение пайплайна для файла или директории .docx
-│   │   └── __init__.py
-│   ├── chat_handler/
-│   │   ├── models.py             # Модели (pydantic-классы) для подготовки запросов (запрос, AI API)
-│   │   ├── chat_processing.py    # Функции обработки файла чата или директории .json
-│   │   └── __init__.py
-│   ├── json_loaders/
-│   │   ├── models.py             # Модели (pydantic-классы) для извлчения и последующий работы с инструкциями
-│   │   ├── my_utils.py           # load_instruction_solution, load_instruction_function_calling
-│   │   ├── task_loader.py        # Загрузчик задания из .json в переменную
-│   │   ├── json_data_loader.py   # Загрузчик инструкций
-│   │   └── __init__.py
-│   └── convert_and_process/
-│       ├── convert_and_process_dir.py  # Функции подготовки .docx и обработки их по задаче (файл/ директория)
-│       └── __init__.py
-├── __init__.py
-└── requirements.txt
-```
 
----
-
-## Основной цикл functiun_callingа на коленке:
-
-1. `run.py` → `run_function_agent()`:
-
-   * Загружает описание функций из JSON
-   * Формирует prompt для LLM
-   * Парсит ответ; если LLM вернул `function_call`, вызывает одну из локальных функций:
-- `process_docxs_to_json`   → многопроцессная конвертация `.docx` в JSON
-- `chats_process`           → многопроцессная отправка чатов в LLM и запись решения
-- `convert_and_process_dir` → объединение обоих шагов
-
----
+Все пути к входным данным, директориям обработки и файлам инструкций
+задаются в `solution/config/config.py`
 
 ## Примечания
-
-* Все пути к директориям (`input_data`, `to_process`, `solutions`) и файл инструкций (`task_instructions.json`, `functions_instructions.json`) задаются в `solution/config/config.py`.
-* Если LLM возвращает некорректный JSON, скрипт выводит сырой ответ.
-* Используется Pydantic v2 для валидации JSON-инструкций и API-моделей.
-* Внесены другие мелкие оптимизации в сравнении с предыдущими проектами (`Practice`, `Practice_unified_structure`).
----
+Если LLM возвращает некорректный JSON, выводится сырой ответ
+Проект рассчитан на пакетную обработку файлов и директорий
+Токены и ключи API выносятся в .env
+Архитектура готова к расширению под более сложных агентов
+Хотя это решение есть не совсем агент, скорее agentic-application
